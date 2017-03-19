@@ -33,7 +33,12 @@
 #define SPINE_OPTIONAL_NORMALS
 #define SPINE_OPTIONAL_SOLVETANGENTS
 
+<<<<<<< HEAD
 using System;
+=======
+//#define SPINE_OPTIONAL_FRONTFACING
+
+>>>>>>> f2f69be17c9b51ad111004d2c09d4b3c75858a22
 using System.Collections.Generic;
 using UnityEngine;
 using Spine.Unity.MeshGeneration;
@@ -163,6 +168,13 @@ namespace Spine.Unity {
 		void OnDisable () {
 			if (clearStateOnDisable && valid)
 				ClearState();
+		}
+
+		void OnDestroy () {
+			if (doubleBufferedMesh == null) return;
+			doubleBufferedMesh.GetNext().Dispose();
+			doubleBufferedMesh.GetNext().Dispose();
+			doubleBufferedMesh = null;
 		}
 
 		protected virtual void ClearState () {
@@ -622,9 +634,23 @@ namespace Spine.Unity {
 		}
 
 		///<summary>This is a Mesh that also stores the instructions SkeletonRenderer generated for it.</summary>
-		public class SmartMesh {
+		public class SmartMesh : System.IDisposable {
 			public Mesh mesh = Spine.Unity.SpineMesh.NewMesh();
 			public SmartMesh.Instruction instructionUsed = new SmartMesh.Instruction();		
+
+			public void Dispose () {
+				if (mesh != null) {
+					#if UNITY_EDITOR
+					if (Application.isEditor && !Application.isPlaying)
+						UnityEngine.Object.DestroyImmediate(mesh);
+					else
+						UnityEngine.Object.Destroy(mesh);
+					#else
+					UnityEngine.Object.Destroy(mesh);
+					#endif
+				}
+				mesh = null;
+			}
 
 			public class Instruction {
 				public bool immutableTriangles;
